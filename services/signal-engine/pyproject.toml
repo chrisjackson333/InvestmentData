@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "investment-platform-signal-engine"
+version = "0.1.0"
+description = "SMA20 long-only signal decisioning and PostgreSQL signal history persistence"
+authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
+packages = [
+    { include = "strategy" },
+    { include = "persistence" },
+    { include = "orchestration" },
+    { include = "config.py" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pydantic = "^2.7"
+pydantic-settings = "^2.3"
+sqlalchemy = "^2.0"
+psycopg2-binary = "^2.9"
+investment-platform-shared = { path = "../../shared", develop = true }
+investment-platform-transforms = { path = "../../data-jobs/transforms", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^5.0"
+black = "^24.0"
+ruff = "^0.5"
+pyright = "^1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast isolated unit tests",
+    "integration: cross-service integration tests",
+    "contract: tests that verify cross-domain data contracts",
+    "slow: tests that take significant time to run",
+]

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: investment-platform-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-investment_platform}
+      POSTGRES_USER: ${DB_USER:-investment_platform}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-investment_platform}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
