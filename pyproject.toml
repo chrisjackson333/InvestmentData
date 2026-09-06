@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "investment-platform-tests"
+version = "0.1.0"
+description = "Root test harness for cross-component contract and integration tests"
+authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+investment-platform-shared = { path = "shared", develop = true }
+investment-platform-ingestion = { path = "data-jobs/ingestion", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: fast isolated unit tests",
+    "integration: cross-service integration tests",
+    "contract: tests that verify cross-domain data contracts",
+    "slow: tests that take significant time to run",
+]

@@ -13,7 +13,7 @@ belong. There is no CI config (`.github/` is empty), no lockfiles, and no instal
 **Implication for Claude:** there are no working build/lint/test commands to run yet. Don't assume Poetry
 environments, dependency installs, or pytest exist and runnable — check before invoking them, and expect to be
 the one creating `pyproject.toml` contents, not just editing existing ones. When implementing a component, set
-it up per the standards below (Python 3.10, Poetry, Ruff, Black, Pyright, pytest) since none of that
+it up per the standards below (Python 3.8, Poetry, Ruff, Black, Pyright, pytest) since none of that
 tooling is wired up yet.
 
 ## What this project is
@@ -77,7 +77,7 @@ each service.
 Apply these when building out any component (`services/signal-engine`, `services/api-orchestrator`,
 `data-jobs/ingestion`, `data-jobs/transforms`):
 
-- **Python 3.10.x** everywhere — no component uses a different minor version.
+- **Python 3.8.x** everywhere — no component uses a different minor version.
 - **Poetry** per-component (`pyproject.toml` in each service/job dir), with lockfiles committed. Avoid ad-hoc
   pip installs outside Poetry.
 - **Ruff** for linting, **Black** for formatting; pre-commit hooks should run both before commit.

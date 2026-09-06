@@ -1,24 +1,19 @@
 [tool.poetry]
-name = "investment-platform-ingestion"
+name = "investment-platform-shared"
 version = "0.1.0"
-description = "CSV ingestion adapter for NQ1! 1-minute market data, raw schema validation, and raw-zone landing"
+description = "Shared cross-domain contracts and utilities for the Investment Data Platform"
 authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
 packages = [
-    { include = "adapters" },
-    { include = "schemas" },
-    { include = "config.py" },
-    { include = "batch_id.py" },
+    { include = "contracts" },
+    { include = "utils" },
 ]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 pydantic = "^2.7"
-pydantic-settings = "^2.3"
-investment-platform-shared = { path = "../../shared", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
-pytest-cov = "^5.0"
 black = "^24.0"
 ruff = "^0.5"
 pyright = "^1.1"

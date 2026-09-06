@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Poetry
+poetry.toml
+
+# Env files
+.env
+
+# Local raw-zone landing (S3 stand-in)
+.localstack_raw/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
