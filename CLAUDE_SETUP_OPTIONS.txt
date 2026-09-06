@@ -1,0 +1,214 @@
+CLAUDE CODE WORKFLOW SETUP — OPTIONS TO REVIEW
+Generated 2026-09-01. Read through, decide what you want, then we implement.
+Nothing here has been set up yet except CLAUDE.md (already done).
+Related: memory note "project_pause_scaffolding" will remind us to resume
+scaffolding services/signal-engine, services/api-orchestrator, data-jobs/ingestion,
+data-jobs/transforms once this setup phase is finished.
+
+=====================================================================
+0. FOUNDATIONAL — git init
+=====================================================================
+Not a Claude feature, but almost everything below (hooks, PR-based skills,
+code-review, ultrareview) assumes a git repo. Right now this directory is
+NOT a git repo.
+
+Tradeoff: none really — low cost, needed regardless of what else you pick.
+Recommendation: do this first, before anything else on this list.
+
+=====================================================================
+1. CLAUDE.md  —  STATUS: DONE
+=====================================================================
+What it is: a markdown file read automatically at the start of every
+session in this directory. Gives me persistent project context (commands,
+architecture, conventions) without you re-explaining each time.
+
+Already created at repo root covering: MVP scope lock, the 5-domain
+architecture + allowed dependency graph, cross-domain data contracts,
+and the local dev standards (Python 3.10/Poetry/Ruff/Black/Pyright/pytest).
+
+Future option: nested CLAUDE.md files. Claude Code reads the CLOSEST
+CLAUDE.md to whatever file you're working on, so once
+services/signal-engine has real code, you could add
+services/signal-engine/CLAUDE.md with service-specific detail (e.g. its
+own run/test commands) instead of bloating the root file.
+Tradeoff: only useful once components have enough real content to need
+their own notes. Not worth doing on an empty scaffold.
+
+=====================================================================
+2. SKILLS
+=====================================================================
+What they are: packaged, reusable instruction sets, invoked either by
+typing /skill-name or automatically when the task matches. Two kinds:
+
+  (a) Built-in / already available to me in this session, no setup needed:
+      - code-review        review a diff/PR for correctness + cleanup
+      - security-review     review pending changes for security issues
+      - run                 launch/drive the app, screenshot it, confirm
+                             a change works (once there's an app to run)
+      - dataviz             chart/dashboard design guidance (if you ever
+                             build a signals dashboard)
+      - update-config       configure settings.json / hooks for you
+      - fewer-permission-prompts   scans session history, allowlists safe
+                             repeated commands automatically
+      These cost nothing to "set up" — they're just invoked when relevant.
+
+  (b) Custom skills you author for this repo (live in .claude/skills/):
+      Most relevant candidate: a "domain-check" skill that reads
+      docs/architecture/DomainContract.txt and audits a diff against the
+      ownership rules (e.g. flags API layer code touching raw ingestion
+      data, or ingestion code computing signals).
+      Tradeoff: real value given how strict your domain boundaries are,
+      but only useful once there's code to check against. Effort:
+      low-medium (mostly prompt-writing, referencing the doc that already
+      exists).
+
+Recommendation: no action needed for (a). Consider (b) once the first
+domain (likely signal-engine) has real code — not now.
+
+=====================================================================
+3. SUBAGENTS
+=====================================================================
+What they are: specialized personas with their own tool access and
+system prompt, defined in .claude/agents/*.md. I dispatch work to them
+via the Agent tool when a task matches their description. Unlike a
+skill (a technique I apply myself), a subagent runs semi-independently
+and reports back.
+
+Relevant candidate for this repo: a "domain-boundary-reviewer" subagent
+— given DomainContract.txt as its reference, it would review any diff
+or new file placement and flag violations (e.g. Streaming code writing
+to the authoritative Postgres store instead of Signal Engine).
+
+Tradeoff:
+  + Reusable across the whole project life, catches architecture drift
+    automatically, cheap to invoke once written.
+  - No value until there's actual code/diffs to review — building it
+    now means writing it against a hypothetical, and you'd likely
+    tune it once you see real diffs anyway.
+  - Extra moving part to maintain if the domain contract changes.
+
+Recommendation: defer until after first component is scaffolded, then
+build it against real code.
+
+=====================================================================
+4. HOOKS  (.claude/settings.json)
+=====================================================================
+What they are: deterministic shell commands the HARNESS runs automatically
+on events (file edit, before/after tool use, session stop, etc.) — not
+something I decide to do, something that always fires. This is the only
+mechanism for "every time X happens, always do Y" — memory/CLAUDE.md
+instructions are guidance I follow, hooks are enforced.
+
+Relevant candidates given your locked Standards.txt tooling choices:
+  - PostToolUse hook: auto-run `ruff check --fix` + `black` on any .py
+    file after I edit it, so formatting/lint is never a manual step.
+  - PreCommit-style hook (or a git pre-commit hook, separate from Claude
+    hooks): block commits if `pytest -m unit` or lint fails.
+  - Stop hook: notify you (desktop notification / sound) when I finish
+    a long task.
+
+Tradeoff:
+  + Cheap to set up, deterministic — won't silently drift like a prompted
+    convention might.
+  + Can be set up now, ahead of code existing (the hook just won't fire
+    until matching files exist).
+  - Wrong/too-aggressive hooks (e.g. auto-formatting before you've
+    reviewed a diff) can be annoying; needs a little tuning.
+  - Requires the tools referenced (ruff/black) to actually be installed
+    once components exist — currently they aren't (empty pyproject.toml
+    files).
+
+Recommendation: reasonable to set up now since the tool choices are
+already locked in Standards.txt — low regret. The `update-config` skill
+can do this for me when you're ready.
+
+=====================================================================
+5. CUSTOM SLASH COMMANDS  (.claude/commands/*.md)
+=====================================================================
+What they are: project-specific shortcuts you or I define — typing
+/command-name runs a pre-written prompt/instruction, optionally taking
+arguments. Different from skills in that they're simpler (just a canned
+prompt, no packaged multi-step logic) and very project-specific.
+
+Candidates once components exist:
+  /test-signal-engine   → run signal-engine's pytest suite with the
+                           right markers
+  /run-transform         → run the PySpark transform job locally against
+                           fixture data
+  /new-domain-event      → scaffold a new Kafka event schema in
+                           shared/contracts/event following the existing
+                           pattern
+
+Tradeoff: near-zero cost, but genuinely useless until there are real
+commands to wrap (right now `pytest`, `poetry run ...` etc. don't exist
+in any component).
+
+Recommendation: defer entirely until after scaffolding — write these as
+you discover which commands you type repeatedly, rather than guessing
+now.
+
+=====================================================================
+6. MCP SERVERS
+=====================================================================
+What they are: connectors that give me direct access to external systems
+(databases, GitHub, cloud providers) beyond the local filesystem/shell.
+
+Candidates for this project, once relevant:
+  - GitHub MCP — richer PR/issue workflows than the `gh` CLI already
+    gives me (which already works fine for most things).
+  - Postgres MCP — query signal history directly during development/
+    debugging once the DB exists.
+  - AWS MCP (if one fits your workflow) — inspect deployed
+    EKS/Lambda/DynamoDB state instead of context-switching to console/CLI.
+
+Tradeoff:
+  + Powerful once there's live infrastructure to talk to.
+  - Zero value today — no database, no deployed infra, no GitHub remote
+    yet. Also the highest setup/maintenance cost of anything on this
+    list (credentials, server config).
+
+Recommendation: revisit only once you have a real Postgres instance
+and/or a GitHub remote and/or deployed AWS infra. Not now.
+
+=====================================================================
+7. PERMISSION / SETTINGS TUNING
+=====================================================================
+What it is: `.claude/settings.json` (project) or user-level settings
+controlling what I can do without asking (allowed bash commands, MCP
+tools, etc.). The `fewer-permission-prompts` skill scans recent session
+transcripts for commands you keep approving and proposes an allowlist.
+
+Tradeoff:
+  + Reduces friction a lot once you have a real workflow going.
+  - Needs real session history to be useful — scanning near-empty
+    history now would produce a thin/low-value allowlist.
+
+Recommendation: run this after a few real sessions of scaffolding/coding
+work, not now.
+
+=====================================================================
+8. MEMORY  —  STATUS: ALREADY ACTIVE, NO SETUP NEEDED
+=====================================================================
+Already running in the background (this conversation has already used
+it — e.g. the note to resume scaffolding after this setup phase). Not
+something to "set up," just something to keep in mind: tell me
+explicitly to remember/forget things, and I'll also save it
+automatically when you correct my approach or confirm something
+non-obvious worked.
+
+=====================================================================
+SUGGESTED ORDER (my recommendation, for tomorrow)
+=====================================================================
+1. git init                              (foundation, do regardless)
+2. Hooks for Ruff/Black + test gate      (cheap, locked-in standards,
+                                           low regret to do early)
+3. Scaffold pyproject.toml x4 + adapters (resume paused work — see
+                                           memory note)
+4. Custom slash commands                  (write these AS you discover
+                                           repeated commands, not upfront)
+5. Domain-boundary subagent + skill       (once first component has
+                                           real code to check)
+6. Permission tuning (fewer-permission-prompts)  (after a few real
+                                           sessions)
+7. MCP servers                            (once Postgres/GitHub remote/
+                                           AWS infra actually exist)

@@ -1,0 +1,72 @@
+Scope Boundaries - Investment Data Platform
+
+Purpose
+- Prevent scope creep during MVP build.
+- Lock what is in scope now vs deferred to phase 2.
+- Keep implementation fast, testable, and deterministic.
+
+In Scope (MVP)
+
+1. Instruments
+- NQ1! futures only.
+
+2. Timeframes
+- Input/source data: 1-minute candles.
+- Strategy runtime data: 5-minute candles derived from 1-minute candles.
+- No additional timeframes in MVP.
+
+3 Data Sources
+- CSV ingestion only.
+- Optional yfinance adapter is deferred.
+
+4. Environments
+- Local development environment.
+- One non-production AWS environment (dev).
+- No production deployment in MVP.
+
+5. Deployment Scope
+- Deploy Signal Engine service to AWS EKS (dev).
+- Other cloud components may be mocked/partial during MVP stabilization.
+
+6. Functional Components
+- CSV ingestion adapter.
+- Transformation flow: validate, normalize, dedupe/sort, aggregate 1m -> 5m.
+- Signal Engine with long-only SMA20 strategy.
+- PostgreSQL persistence for historical signals.
+- API endpoints: health, getLatestSignal, allSignals/recentSignals (read-focused).
+- Kafka event publish: signal.created.
+
+Out of Scope (MVP)
+
+1. Trading Execution
+- No live broker integration.
+- No real order placement.
+- No real money execution workflow.
+
+2. Product Expansion
+- No multi-instrument universe yet (indices basket/equities/crypto/options).
+- No extra strategy families beyond initial SMA20 long-only baseline.
+- No multi-timeframe strategy matrix.
+
+3. Platform Hardening Beyond MVP
+- No production release workflow.
+- No advanced SRE hardening beyond baseline observability/security controls.
+- No full API Gateway/Lambda enterprise hardening until MVP flow is stable.
+
+Conditional Scope Items
+- DynamoDB latest-state cache is optional in MVP and only added early if latency/performance requires it.
+- yfinance is optional follow-on once CSV-driven flow is stable and passing tests.
+
+Scope Lock Rule
+- Any new feature request during MVP is deferred to phase 2 unless it is required to pass MVP acceptance tests.
+
+MVP Acceptance Criteria
+- End-to-end path works for NQ1!: CSV -> transform -> signal -> PostgreSQL -> API -> Kafka event.
+- Core test suite passes for data format validation, transform correctness, strategy calculations, and API response contract.
+- Signal Engine runs successfully in local dev and in dev EKS.
+
+Phase 2 Backlog Seeds (Deferred by Design)
+- Add more instruments and timeframes.
+- Add volatility/rebalance strategies and richer risk controls.
+- Add broker integration and controlled order execution workflow.
+- Add stronger auth/rate-limit policies and production readiness hardening.

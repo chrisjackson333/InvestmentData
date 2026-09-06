@@ -1,0 +1,80 @@
+Local Development Standards - Investment Data Platform
+
+Purpose
+- Standardize local development so all services/jobs behave consistently.
+- Reduce onboarding friction and integration bugs.
+- Define quality gates before feature work scales.
+
+1. Python Version Standard
+- Python version: 3.10.x for all MVP components.
+- Applies to:
+	- services/signal-engine
+	- services/api-orchestrator
+	- data-jobs/ingestion
+	- data-jobs/transforms
+- Rule: no component uses a different Python minor version during MVP.
+
+2. Dependency Management Standard
+- Tool: Poetry.
+- File: pyproject.toml per component.
+- Lock files are committed for reproducibility.
+- Rule: avoid ad-hoc package installs outside Poetry-managed dependency definitions.
+
+3. Lint and Formatting Standard
+- Linter: Ruff.
+- Formatter: Black.
+- Import sorting: managed by Ruff ruleset (or isort if explicitly adopted later).
+- Pre-commit hooks run Ruff + Black before commit.
+
+4. Type Checking Standard
+- Type checker: Pyright (recommended default).
+- MVP mode: baseline checks enabled; strictness can increase in phase 2.
+- Requirement: new core modules include type hints for public functions.
+
+5. Environment Variable Strategy
+- One tracked template file at repo root: .env.example.
+- Real credentials/secrets stay in local untracked .env files.
+- Config loading via pydantic-settings in app/job config modules.
+- Naming convention by domain prefix:
+	- INGESTION_
+	- SIGNAL_
+	- API_
+	- DB_
+	- KAFKA_
+	- AWS_
+
+6. Testing Conventions
+- Test framework: pytest.
+- Unit tests live with each component.
+- Cross-component tests live in top-level tests directories:
+	- tests/contract
+	- tests/integration
+	- tests/fixtures
+- Naming rules:
+	- test_<feature>.py
+	- test_<behavior>
+- Required markers:
+	- unit
+	- integration
+	- contract
+	- slow
+
+7. MVP Quality Gates (Local + CI)
+- Must pass before merge:
+	- formatting clean (Black)
+	- lint clean (Ruff)
+	- tests passing (at minimum unit + contract)
+- Integration tests may run on merge/main pipeline if runtime cost is high.
+
+8. Documentation and Change Control
+- Any change to these standards must update this document in the same PR.
+- New components must explicitly declare:
+	- Python version
+	- dependency file
+	- test location
+	- env var usage
+
+Definition of Done for Step 5
+- Standards are written and discoverable in docs/architecture.
+- All MVP components align to Python 3.10 + Poetry + Ruff + Black + pytest.
+- CI plan references these exact quality gates.

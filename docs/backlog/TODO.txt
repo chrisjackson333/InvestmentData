@@ -1,0 +1,59 @@
+
+1. Define a thin MVP before building everything.
+Pick one end-to-end slice first: mock market data -> Spark transform -> signal generation -> one API endpoint -> one event.
+
+-Data Source:
+    -CSV
+-Porfilio Scope: 
+    -NQ1! futures
+    -5min candles derived from 1min data.
+-Transformation:
+    -Validate required columns
+    -Normalize Time stamps
+    -Enforce data types
+    -Drop duplicates, Ensure sorted by timestamp
+    -Missing candles/Gaps
+    -Convert to one timezone
+    -Build higher timeframes
+-Strategy:
+    -'Long Only' off an SMA 20 band
+-Persistence:
+    -Hisotric signals to PostgreSQL
+    -Backtesting/Audit queries
+    -Performance analysis
+-Api Endpoint: 
+    -health
+    -getLatestSignal
+    -allSignals
+-Event: 
+    -publish signals.created to Kafka (Why, if we already send this to PostgreSQL?)
+        -Answer: PostgreSQL stores history, Kafka broadcasts new events in real time
+            -Allows other services can react instantly without polling DB
+-Deployment Target:
+    -AWS EKS (Elastic Kubernetes Service)
+-Test Path: TDD to verify incoming data format, strategy calculations and application, api response format
+
+2. Split platform domains clearly from day one; ingestion, signal engine, API layer, streaming, platform/infra.
+3. Freeze scope boundaries; instruments, timeframes, environments, and out-of-scope items (no live broker execution in MVP).
+4. Create repository layout first; services, data jobs, shared libs, tests, infra, docs.
+5. Establish local dev standards; Python version, dependency manager, lint/format, env var strategy, test conventions.
+-----
+6. Define canonical data contracts before coding; market tick input, portfolio position input, transformed output, signal record, Kafka event schemas.
+7. Define transformation job spec; timestamp normalization, type enforcement, sorting, dedupe, gap handling policy, timezone standardization, 1-minute to 5-minute OHLCV aggregation, quality checks.
+8. Build ingestion first; mock producer to S3 (or equivalent dev path) and deterministic CSV fixture flow.
+9. Implement Glue/PySpark transform pipeline; clean, aggregate, feature-ready output, with pytest coverage for transform correctness.
+10. Build signal engine service in FastAPI; start with momentum/SMA20 long-only, then add volatility and rebalance triggers later.
+11. Implement persistence model; latest lookup state in DynamoDB (phase 2 if needed) and historical timeline/audit analytics in PostgreSQL.
+12. Define and implement first API endpoints; health, getLatestSignal, and recent/all signals read endpoints first.
+13. Add API Gateway and Lambda orchestration layer; request validation, auth hooks, and controlled routing to backend services.
+14. Add event streaming; publish signal.created and later portfolio.rebalanced, plus at least one consumer for downstream reactions/read-model updates.
+15. Add reliability and security controls early; least-privilege IAM, validation, retries, DLQ patterns, basic rate limiting.
+16. Add observability baseline; structured logs, metrics, traces, correlation IDs, and starter dashboards.
+17. Containerize services; standard Docker builds for consistent local and cloud runtime.
+18. Deploy in stages; first deploy signal engine to non-production EKS (dev), keep Glue/Lambda/API Gateway partially mocked until stable.
+19. Add basic Terraform modules; network, compute, IAM, storage/data, gateway/event components.
+20. Set up CI/CD in GitHub Actions; lint, tests, build, security checks, deploy gates, PR checks.
+21. Enforce TDD path throughout; data-format validation tests, strategy math tests, transform tests, API contract tests, integration path tests.
+22. Create project operations docs; architecture notes, runbook, backlog/sprint plan, decision log, onboarding notes.
+23. Run MVP validation checkpoint; verify acceptance criteria, record gaps, and define phase-2 expansion.
+24. Phase-2 expansion targets; broader instrument universe, extra timeframes, richer strategies, stronger auth/risk controls, and broker execution workflow.

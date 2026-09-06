@@ -1,0 +1,223 @@
+Domain Contract - Investment Data Platform
+
+Purpose
+- Define clear ownership boundaries across domains from day one.
+- Prevent overlap, hidden coupling, and unclear handoffs.
+- Lock allowed dependencies so services stay modular.
+
+MVP Scope Context
+- Instrument scope: NQ1! only.
+- Source granularity: 1-minute bars.
+- Strategy timeframe: derived 5-minute candles.
+- Strategy scope: long-only SMA20 signal.
+- Deployment scope: Signal Engine first in non-prod (dev) EKS.
+
+Domain 1: Ingestion
+Mission
+- Acquire raw market and portfolio data and land it in canonical raw format.
+
+Owns
+- CSV ingestion adapter (MVP baseline).
+- Optional yfinance adapter (phase 1.5 or 2).
+- Raw schema validation at ingest time.
+- Raw landing path conventions (S3 raw zone naming and partitioning).
+- Ingestion metadata (source, ingest_ts, batch_id, file_id).
+
+Inputs
+- CSV files containing NQ1! 1-minute OHLCV bars.
+- Optional portfolio position snapshots.
+
+Outputs
+- Canonical raw records in storage, partitioned by date/source.
+- Ingestion quality report (row counts, invalid rows, duplicate counts).
+
+Does Not Own
+- Candle aggregation logic.
+- Signal calculations.
+- API response contracts.
+- Kafka publish logic.
+
+Primary KPIs
+- Ingestion completeness.
+- Invalid row rate.
+- Ingestion latency.
+
+
+Domain 2: Signal Engine
+Mission
+- Transform validated market features into deterministic trade signals.
+
+Owns
+- Strategy logic and rule parameters.
+- SMA20 long-only signal decisioning.
+- Reason codes for each signal decision.
+- Signal persistence writer(s): PostgreSQL history first.
+- Latest signal computation for API read use.
+
+Inputs
+- Clean 5-minute candles and feature fields from transform output.
+- Strategy configuration parameters.
+
+Outputs
+- Latest signal state per symbol/timeframe.
+- Historical signal timeline in PostgreSQL.
+- Signal domain events ready for streaming publish.
+
+Does Not Own
+- External API auth and throttling policies.
+- API Gateway/Lambda routing rules.
+- Kafka cluster provisioning.
+
+Primary KPIs
+- Signal determinism (same input -> same output).
+- Decision latency.
+- Calculation correctness against tests.
+
+
+Domain 3: API Layer
+Mission
+- Provide stable, validated client-facing access to signal data.
+
+Owns
+- Endpoint definitions and contracts.
+- Request/response validation.
+- API error model.
+- API Gateway + Lambda orchestration behavior.
+
+Inputs
+- Signal Engine read models or query interfaces.
+- Auth context and request metadata.
+
+Outputs
+- Health endpoint response.
+- Latest signal endpoint response.
+- Recent/all signal endpoint responses (bounded/paginated).
+
+Does Not Own
+- Strategy math.
+- Transform logic.
+- Raw data ingestion.
+
+Primary KPIs
+- API availability.
+- P95 latency.
+- Contract compliance and error rate.
+
+
+Domain 4: Streaming
+Mission
+- Broadcast real-time business events and support downstream consumers.
+
+Owns
+- Kafka topic conventions.
+- Event schemas and versioning rules.
+- Producer reliability behavior (acks/retry/idempotency policy).
+- Consumer logic for read model updates or audit fanout.
+
+Inputs
+- Signal events from Signal Engine.
+
+Outputs
+- signal.created topic events (MVP event).
+- Consumer side effects (for example audit append or cache update).
+
+Does Not Own
+- Authoritative historical storage (PostgreSQL is source of truth).
+- API contracts.
+- Strategy generation logic.
+
+Primary KPIs
+- Publish success rate.
+- Consumer lag.
+- Duplicate/ordering incident count.
+
+
+Domain 5: Platform/Infra
+Mission
+- Provide secure, repeatable runtime and delivery foundation.
+
+Owns
+- EKS runtime and workload deployment patterns.
+- Docker build standards.
+- Terraform modules and state conventions.
+- IAM policies and secrets integration.
+- Observability stack baseline (logs/metrics/traces).
+- CI/CD pipelines and deployment gates.
+
+Inputs
+- Service artifacts and deployment manifests.
+- Environment configuration.
+
+Outputs
+- Running dev environment.
+- Deployment logs and rollout status.
+- Infra auditability and reproducible environments.
+
+Does Not Own
+- Business signal logic.
+- API payload semantics.
+- Transform business rules.
+
+Primary KPIs
+- Deployment success rate.
+- Change failure rate.
+- Mean time to recovery.
+
+
+Allowed Dependency Graph (Strict)
+- Ingestion -> Signal Engine
+- Signal Engine -> PostgreSQL
+- Signal Engine -> Streaming (event publish)
+- API Layer -> Signal Engine read path (or read-model store)
+- Streaming Consumers -> read models/audit stores
+- Platform/Infra -> supports all domains
+
+Disallowed shortcuts
+- API Layer directly reading raw ingestion data.
+- Ingestion publishing final trading signals.
+- Platform/Infra containing business strategy code.
+
+
+Domain Interfaces to Lock First
+1) Ingestion -> Signal Engine (5-minute candle contract)
+- symbol: string (NQ1!)
+- candle_ts_utc: datetime (start of 5-minute bucket)
+- open: decimal
+- high: decimal
+- low: decimal
+- close: decimal
+- volume: decimal
+- source_batch_id: string
+- quality_flags: array[string]
+
+2) Signal Engine -> API Layer (latest signal contract)
+- symbol: string
+- timeframe: string ("5m")
+- signal: string ("LONG" | "HOLD")
+- strategy: string ("sma20_long_only")
+- signal_ts_utc: datetime
+- reason_code: string
+- input_ref: string (batch id or candle id)
+
+3) Signal Engine -> Streaming (signal.created event)
+- event_id: string
+- event_type: string ("signal.created")
+- event_version: string
+- produced_ts_utc: datetime
+- correlation_id: string
+- payload: object (contains latest signal contract fields)
+
+
+Definition of Done for Step 2 (Domain Split)
+- Every domain has mission, owns, inputs, outputs, and does-not-own sections.
+- Allowed dependency graph is documented and agreed.
+- First three cross-domain interfaces are defined.
+- Disallowed shortcuts are explicit.
+- Team can map each new task to exactly one owning domain.
+
+
+Implementation Notes for This Project
+- Keep broker order execution out of MVP domain scope.
+- Keep DynamoDB as phase-2 optimization unless latest-state latency requires it early.
+- Keep PostgreSQL as signal history source of truth in MVP.
+- Keep signal.created in Kafka even when storing in PostgreSQL: DB is storage, Kafka is real-time distribution.
