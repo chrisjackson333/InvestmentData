@@ -1,28 +1,21 @@
 [tool.poetry]
-name = "investment-platform-signal-engine"
+name = "investment-platform-streaming"
 version = "0.1.0"
-description = "SMA20 long-only signal decisioning and PostgreSQL signal history persistence"
+description = "Kafka event publishing and consumption for signal.created events"
 authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
 packages = [
-    { include = "strategy" },
-    { include = "persistence" },
-    { include = "orchestration" },
-    { include = "signal_engine_config.py" },
+    { include = "streaming" },
 ]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+confluent-kafka = "^2.5"
 pydantic = "^2.7"
 pydantic-settings = "^2.3"
-sqlalchemy = "^2.0"
-psycopg2-binary = "^2.9"
 investment-platform-shared = { path = "../../shared", develop = true }
-investment-platform-transforms = { path = "../../data-jobs/transforms", develop = true }
-investment-platform-streaming = { path = "../streaming", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
-pytest-cov = "^5.0"
 black = "^24.0"
 ruff = "^0.5"
 pyright = "^1.1"

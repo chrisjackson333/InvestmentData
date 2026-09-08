@@ -13,6 +13,7 @@ from aggregation.candles import aggregate_to_5min_candles
 from aggregation.reader import read_raw_zone_bars
 from contracts.signal.models import LatestSignal
 from sqlalchemy.engine import Engine
+from streaming.producer import publish_signal_created
 
 from persistence.signals import insert_signal
 from signal_engine_config import SignalEngineSettings
@@ -31,4 +32,5 @@ def run_from_raw_zone_file(
     signal = compute_sma20_signal(candles, sma_period=settings.sma_period)
     if signal is not None:
         insert_signal(engine, signal)
+        publish_signal_created(signal, correlation_id=source_batch_id)
     return signal

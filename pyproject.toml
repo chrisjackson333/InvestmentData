@@ -15,6 +15,7 @@ investment-platform-ingestion = { path = "data-jobs/ingestion", develop = true }
 investment-platform-transforms = { path = "data-jobs/transforms", develop = true }
 investment-platform-signal-engine = { path = "services/signal-engine", develop = true }
 investment-platform-api-orchestrator = { path = "services/api-orchestrator", develop = true }
+investment-platform-streaming = { path = "services/streaming", develop = true }
 
 [build-system]
 requires = ["poetry-core"]
