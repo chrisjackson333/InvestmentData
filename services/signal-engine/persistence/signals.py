@@ -1,6 +1,6 @@
 """Signal history persistence: insert + latest-read for Postgres."""
 
-from typing import Optional
+from typing import List, Optional
 
 from contracts.common import Symbol, Timeframe
 from contracts.signal.models import LatestSignal
@@ -9,6 +9,18 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine import Engine
 
 from .schema import signal_history
+
+
+def _row_to_latest_signal(row) -> LatestSignal:
+    return LatestSignal(
+        symbol=row["symbol"],
+        timeframe=row["timeframe"],
+        signal=row["signal"],
+        strategy=row["strategy"],
+        signal_ts_utc=row["signal_ts_utc"],
+        reason_code=row["reason_code"],
+        input_ref=row["input_ref"],
+    )
 
 
 def insert_signal(engine: Engine, signal: LatestSignal) -> None:
@@ -47,14 +59,19 @@ def get_latest_signal(
     )
     with engine.connect() as conn:
         row = conn.execute(stmt).mappings().first()
-    if row is None:
-        return None
-    return LatestSignal(
-        symbol=row["symbol"],
-        timeframe=row["timeframe"],
-        signal=row["signal"],
-        strategy=row["strategy"],
-        signal_ts_utc=row["signal_ts_utc"],
-        reason_code=row["reason_code"],
-        input_ref=row["input_ref"],
+    return None if row is None else _row_to_latest_signal(row)
+
+
+def list_signals(
+    engine: Engine, symbol: Symbol, timeframe: Timeframe, limit: int = 50
+) -> List[LatestSignal]:
+    """Bounded, most-recent-first signal history for the allSignals endpoint."""
+    stmt = (
+        select(signal_history)
+        .where(signal_history.c.symbol == symbol, signal_history.c.timeframe == timeframe)
+        .order_by(signal_history.c.signal_ts_utc.desc())
+        .limit(limit)
     )
+    with engine.connect() as conn:
+        rows = conn.execute(stmt).mappings().all()
+    return [_row_to_latest_signal(row) for row in rows]

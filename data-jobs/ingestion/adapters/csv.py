@@ -13,7 +13,7 @@ from typing import Iterable, Iterator, List, Set, Tuple
 from contracts.market_tick.models import RawIngestionQualityReport, RawMarketBar
 from pydantic import ValidationError
 
-from config import IngestionSettings
+from ingestion_config import IngestionSettings
 
 
 def read_csv_rows(path: Path) -> Iterator[dict]:

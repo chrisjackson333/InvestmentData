@@ -5,7 +5,7 @@ description = "Aggregates validated 1-minute NQ1! bars into 5-minute Transformed
 authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
 packages = [
     { include = "aggregation" },
-    { include = "config.py" },
+    { include = "transform_config.py" },
 ]
 
 [tool.poetry.dependencies]

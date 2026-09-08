@@ -7,7 +7,7 @@ packages = [
     { include = "strategy" },
     { include = "persistence" },
     { include = "orchestration" },
-    { include = "config.py" },
+    { include = "signal_engine_config.py" },
 ]
 
 [tool.poetry.dependencies]

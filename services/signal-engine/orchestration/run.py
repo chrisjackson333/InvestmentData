@@ -14,8 +14,8 @@ from aggregation.reader import read_raw_zone_bars
 from contracts.signal.models import LatestSignal
 from sqlalchemy.engine import Engine
 
-from config import SignalEngineSettings
 from persistence.signals import insert_signal
+from signal_engine_config import SignalEngineSettings
 from strategy.sma20 import compute_sma20_signal
 
 

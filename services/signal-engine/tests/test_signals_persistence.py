@@ -11,9 +11,9 @@ import pytest
 from contracts.signal.models import LatestSignal
 from sqlalchemy import create_engine, text
 
-from config import DatabaseSettings
 from persistence.schema import metadata
-from persistence.signals import get_latest_signal, insert_signal
+from persistence.signals import get_latest_signal, insert_signal, list_signals
+from signal_engine_config import DatabaseSettings
 
 
 @pytest.fixture
@@ -73,3 +73,18 @@ def test_insert_signal_is_idempotent_on_conflict(engine):
     with engine.connect() as conn:
         count = conn.execute(text("SELECT COUNT(*) FROM signal_history")).scalar()
     assert count == 1
+
+
+@pytest.mark.integration
+def test_list_signals_returns_most_recent_first_bounded_by_limit(engine):
+    for minute in (30, 35, 40):
+        insert_signal(engine, _signal(datetime(2026, 9, 4, 13, minute, tzinfo=timezone.utc)))
+    results = list_signals(engine, "NQ1!", "5m", limit=2)
+    assert len(results) == 2
+    assert results[0].signal_ts_utc == datetime(2026, 9, 4, 13, 40, tzinfo=timezone.utc)
+    assert results[1].signal_ts_utc == datetime(2026, 9, 4, 13, 35, tzinfo=timezone.utc)
+
+
+@pytest.mark.integration
+def test_list_signals_returns_empty_list_when_no_rows(engine):
+    assert list_signals(engine, "NQ1!", "5m") == []

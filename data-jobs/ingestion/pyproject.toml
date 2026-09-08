@@ -6,7 +6,7 @@ authors = ["Chris Jackson <chrisjackson333@gmail.com>"]
 packages = [
     { include = "adapters" },
     { include = "schemas" },
-    { include = "config.py" },
+    { include = "ingestion_config.py" },
     { include = "batch_id.py" },
 ]
 
